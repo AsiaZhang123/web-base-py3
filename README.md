@@ -1,0 +1,1 @@
+docker run -it --name=web_debug -v /home/asian-z/PycharmProjects/:/root/project/ -v /data/logs/docker/:/data/logs/ -p 3299:3299 web_py3:2
