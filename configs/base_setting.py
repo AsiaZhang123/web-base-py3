@@ -6,6 +6,8 @@ DEFAULT_METHODS = ['POST', 'GET']
 CALL_SYSTEM_ID = 1
 PLATFORM = 1203
 
+# gaode_map_key
+GAODEMAP_APIWEBKEY = "8f16bc0933bbd84b462a7f9719fb6530"
 
 SSO_VERSION = ['3.6.0']  # 进行单点登录限制的版本
 
@@ -36,3 +38,14 @@ CRM_API_URL = 'http://crm.mofanghr.com/'
 CRM1_API_URL = 'http://crm1.mofanghr.com/'
 EMG_API_URL = 'http://emg.mofanghr.com/'
 PAYMENT_API_URL = 'http://payment.mofanghr.com/'
+HRO_API_URL = 'http://hro.mofanghr.com/'
+
+MOBILE_ORIGIN_URL = [
+    'https://chart.mofanghr.com',
+    'https://i.mofanghr.com',
+    'https://m.mofanghr.com',
+    'https://ad.mofanghr.com',
+    'http://crm.mofanghr.com',
+    'http://crm1.mofanghr.com',
+    'https://vip.mofanghr.com'
+]

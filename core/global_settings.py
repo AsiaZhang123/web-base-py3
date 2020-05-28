@@ -1,9 +1,12 @@
 
 
 REQUEST_SUCCESS = 1
-REQUEST_FAIL = -1
-LOGIN_FAIL = -401
-OTHER_LOGIN_FAIL = -402
+REQUEST_FAIL = -97  # 自己逻辑错误
+SERVER_FAIL = -98   # 后端返回错误
+PARAMS_FAIL = -99  # 前端参数错误
+
+LOGIN_FAIL = -401  # 未登录
+OTHER_LOGIN_FAIL = -402  # 非单点登录
 
 SYSTEM_CODE_404 = 404
 SYSTEM_CODE_503 = 503
@@ -11,5 +14,3 @@ SYSTEM_ERROR = '很抱歉服务器异常，请您稍后再试'
 
 METHODS = ["GET", "POST", "DELETE", "PUT"]
 DEFAULT_METHODS = ["GET", "POST"]
-
-MOBILE_ORIGIN_URL = ['https://chart.mofanghr.com', 'https://i.mofanghr.com', 'https://m.mofanghr.com', 'https://ad.mofanghr.com', 'http://crm.mofanghr.com', 'http://crm1.mofanghr.com', 'https://vip.mofanghr.com']

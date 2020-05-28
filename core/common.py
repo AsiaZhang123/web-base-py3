@@ -1,3 +1,5 @@
+# 这个文件中的函数只依赖与第三方包，和静态参数，防止重复调用
+
 import uuid
 import json
 import urllib.parse
@@ -16,7 +18,7 @@ def get_trace_id():
 
 
 def is_none(arg):
-    return not arg or str(arg) in ['null','none','false']
+    return not arg or str(arg) in ['null', 'none', 'false']
 
 
 def get_version():
@@ -73,3 +75,15 @@ def get_common_params(params):
     except Exception:
         pass
     return params
+
+
+def get_form_header():
+    return {
+        'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
+    }
+
+
+def get_json_header():
+    return {
+        'Content-Type': 'application/json;charset=utf-8'
+    }

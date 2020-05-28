@@ -11,3 +11,5 @@ if flask_env == "PROD":
 else:
     print('Loading config: DEV')
     from configs.dev_setting import *
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
