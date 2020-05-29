@@ -1,11 +1,9 @@
+import os
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 
-
 import configs
-from core.check_param import SubCheckParam
 from core.mofang_flask import MFFlask
-from configs import DEFAULT_METHODS
 from core.core import check_param
 
 
@@ -20,20 +18,19 @@ def abc():
     return "hello world!!!"
 
 
-check_member = SubCheckParam(DEFAULT_METHODS)
+from .view import root, user_bp, task_bp, file_bp
+from .view import check_member
 
-# root = MFBlueprint('root', __name__, default_methods=DEFAULT_METHODS)
-# manager = MFBlueprint('manager', __name__, default_methods=DEFAULT_METHODS)
-# member = MFBlueprint('member', __name__, default_methods=DEFAULT_METHODS)
+# 将所有调用蓝图的包全部导入一遍，以便蓝图上注册的url生效
+for pwd, dirs, files in os.walk("./crowd_portal_py3/view", topdown=False):
+    for file in files:
+        if file.endswith('.py') and file != '__init__.py':
+            exec("import " + pwd[2:].replace('/', '.') + "." + file[:-3])
 
-
-from mobile_portal_py3.view import *
-from mobile_portal_py3.view.user import root, user_b
-# from mobile_portal_py3.view.resume import resume_b
-
+# app注册蓝图必须在 所有应用蓝图的包导入之后，这样蓝图上的url和函数映射才能生效
 app.register_blueprint(root)
-app.register_blueprint(user_b, url_prefix='/outer/user')
-# app.register_blueprint(resume_b, url_prefix='/outer/resume')
-# app.register_blueprint(member, url_prefix='/member')
+app.register_blueprint(user_bp)
+app.register_blueprint(task_bp)
+app.register_blueprint(file_bp)
 
 check_param.register_check_param(check_member, url_prefix='/member')
