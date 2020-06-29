@@ -22,7 +22,7 @@ from .view import root, user_bp, task_bp, file_bp
 from .view import check_member
 
 # 将所有调用蓝图的包全部导入一遍，以便蓝图上注册的url生效
-for pwd, dirs, files in os.walk("./crowd_portal_py3/view", topdown=False):
+for pwd, dirs, files in os.walk("./mobile_portal_py3/view", topdown=False):
     for file in files:
         if file.endswith('.py') and file != '__init__.py':
             exec("import " + pwd[2:].replace('/', '.') + "." + file[:-3])
