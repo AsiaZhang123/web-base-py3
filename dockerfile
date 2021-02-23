@@ -18,17 +18,18 @@ WORKDIR /root/project
 # RUN apt-get install vim -y
 
 # 安装运行依赖包
-RUN pip install flask==1.1.1 -i https://pypi.tuna.tsinghua.edu.cn/simple/
-RUN pip install flask-sqlalchemy==2.4.1 -i https://pypi.tuna.tsinghua.edu.cn/simple/
-RUN pip install tornado==6.0.4 -i https://pypi.tuna.tsinghua.edu.cn/simple/
-RUN pip install psycopg2==2.8.4 -i https://pypi.tuna.tsinghua.edu.cn/simple/
-RUN pip install gevent==1.4.0 -i https://pypi.tuna.tsinghua.edu.cn/simple/
-RUN pip install gunicorn==20.0.4 -i https://pypi.tuna.tsinghua.edu.cn/simple/
-RUN pip install flask-cors==3.0.8 -i https://pypi.tuna.tsinghua.edu.cn/simple/
-RUN pip install redis==3.4.1 -i https://pypi.tuna.tsinghua.edu.cn/simple/
-RUN pip install requests==2.23.0 -i https://pypi.tuna.tsinghua.edu.cn/simple/
-RUN pip install portalocker==1.6.0 -i https://pypi.tuna.tsinghua.edu.cn/simple/
-RUN pip install pycrypto==2.6.1 -i https://pypi.tuna.tsinghua.edu.cn/simple/
+RUN pip install flask==1.1.1 -i https://mirrors.aliyun.com/pypi/simple/
+RUN pip install flask-sqlalchemy==2.4.1 -i https://mirrors.aliyun.com/pypi/simple/
+RUN pip install tornado==6.0.4 -i https://mirrors.aliyun.com/pypi/simple/
+RUN pip install psycopg2==2.8.4 -i https://mirrors.aliyun.com/pypi/simple/
+RUN pip install gevent==1.4.0 -i https://mirrors.aliyun.com/pypi/simple/
+RUN pip install gunicorn==20.0.4 -i https://mirrors.aliyun.com/pypi/simple/
+RUN pip install flask-cors==3.0.8 -i https://mirrors.aliyun.com/pypi/simple/
+RUN pip install redis==3.4.1 -i https://mirrors.aliyun.com/pypi/simple/
+RUN pip install requests==2.23.0 -i https://mirrors.aliyun.com/pypi/simple/
+RUN pip install portalocker==1.6.0 -i https://mirrors.aliyun.com/pypi/simple/
+RUN pip install pycrypto==2.6.1 -i https://mirrors.aliyun.com/pypi/simple/
+RUN pip install py_eureka_client==0.7.4 -i https://mirrors.aliyun.com/pypi/simple/
 
 # 设置容器启动运行命令
 CMD /bin/bash

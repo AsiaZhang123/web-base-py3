@@ -14,4 +14,4 @@ fi
 echo "Environment: $FLASK_ENV"
 echo "Thread Count: $THREAD_COUNT"
 
-gunicorn -k gevent -w $THREAD_COUNT -b 0.0.0.0:3263 h5_portal:app -t 6000000 --daemon
+gunicorn -k gevent -w $THREAD_COUNT -b 0.0.0.0:3263 mobile_portal_py3:app -t 6000000 --daemon

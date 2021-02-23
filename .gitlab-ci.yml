@@ -33,7 +33,7 @@ release:
     - python-release
   environment:
     name: release
-    url: https://mobile-application.mofanghr.com/user/loginByMobile.json?params=%7B%22mobile%22:%2218510574788%22,%22verifyCode%22:%229966%22,%22appKey%22:%22login%22,%22channel%22:%22%22,%22code%22:%22%22%7D
+    url: https://www.baidu.com/user/loginByMobile.json?params=%7B%22mobile%22:%2218510574788%22,%22verifyCode%22:%229966%22,%22appKey%22:%22login%22,%22channel%22:%22%22,%22code%22:%22%22%7D
   script:
-    - cd /home/mofang/mofang-deploy-online/
-    - python python_project.py mofang-mobile
+    - cd /home/zyz/zyz-deploy-online/
+    - python python_project.py mobile-app

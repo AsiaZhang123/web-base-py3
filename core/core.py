@@ -8,17 +8,19 @@ import urllib.parse
 
 from functools import wraps
 from flask import make_response, request
+from py_eureka_client import eureka_client
+from urllib.parse import urlencode
 
-from configs.logging_config import mf_logger as logger
+from configs.logging_config import zyz_logger as logger
 from core.utils import get_randoms, AesCrypt, get_hashlib
-from core.common import get_trace_id, is_none, get_version
+from core.common import get_trace_id, is_none, get_version, get_json_header
 
 from core.exceptions import BusinessException, BaseError
 from core.check_param import build_check_rule, CheckParam
-from core.global_settings import SYSTEM_CODE_404, SYSTEM_CODE_503, METHODS, SYSTEM_ERROR
+from core.global_settings import METHODS
 
-from configs import AES_KEY, REDIS_HOST, REDIS_PORT, REDIS_PASSWORD, AUTH_COOKIE_KEY, SSO_VERSION, \
-    CALL_SYSTEM_ID, MOBILE_ORIGIN_URL
+from configs import flask_env, AES_KEY, REDIS_HOST, REDIS_PORT, REDIS_PASSWORD, AUTH_COOKIE_KEY, SSO_VERSION, \
+    CALL_SYSTEM_ID, MOBILE_ORIGIN_URL, EUREKA_CLIENT_URI
 
 check_param = CheckParam()
 
@@ -92,7 +94,7 @@ class Redis(object):
 
     def set_blpop(self, *name, timeout=0):
         # 弹出传入所有列表的第一个有值的（阻塞），可以设置阻塞超时时间
-        self.conn.blpop(*name, timeout)
+        self.conn.blpop(*name, timeout=timeout)
 
     def get_llen(self, name):
         # 返回列表的长度（列表不存在时返回0）
@@ -117,9 +119,9 @@ class Redis(object):
         # 判断value是否是集合name中的元素。是返回1 ，不是返回0
         return self.conn.sismember(name, value)
 
-    def expire(self, name, time):
+    def expire(self, name, timeout):
         # 设置key的过期时间
-        self.conn.expire(name, time)
+        self.conn.expire(name, timeout)
 
 
 class LoginAndReturn(object):
@@ -144,8 +146,7 @@ def login_required(f):
 
         # 校验cookie解析出来的随机数 和存在redis中的随机数是否一致
         if is_none(_sso_code) or is_none(sso_code) or sso_code != _sso_code:
-            logger.info("账号在其他设备登陆了%s" % user_id)
-            return BaseError.not_local_login()
+            return BaseError.not_local_login(user_id)
 
         # 解密auth_token中的sign
         sign = aes_decrypt(auth_token)
@@ -161,7 +162,7 @@ def login_required(f):
 
 # 制作response并返回的函数,包括制作response的请求头和请求体
 #   login_data : 登录操作时必传参数，必须包括user_id，其余可以包括想带入cookie中的参数 格式{“user_id”:“12345”}
-def return_data(code=200, data=None, msg=u'成功', login_data=None):
+def return_data(data=None, code=200, msg=u'成功', login_data=None):
     data = {} if data is None else data
     data_json = json.dumps({'traceID': get_trace_id(),
                             'code': code,
@@ -232,41 +233,37 @@ def allow_cross_domain(response):
     return response
 
 
-def request_check(func):
-    @wraps(func)
-    def decorator(*args, **kw):
-        # 校验参数
-        try:
-            check_rule = build_check_rule(str(request.url_rule), str(request.rule_version),
-                                          list(request.url_rule.methods & set(METHODS)))
-            check_func = check_param.get_check_rules().get(check_rule)
-            if check_func:
-                check_func(*args, **kw)
-        except BusinessException as e:
-            if not is_none(e.func):
-                return e.func
-            elif not is_none(e.code) and not is_none(e.msg):
-                business_exception_log(e)
-                return return_data(code=e.code, msg=e.msg)
-        # 监听抛出的异常
-        try:
-            if request.trace_id is not None and request.full_path is not None:
-                logger.info('trace_id is:' + request.trace_id + ' request path:' + request.full_path)
+def request_check():
+    def decorator(func):
+        @wraps(func)
+        def handle_request_data(*args, **kw):
+            # 校验参数
+            try:
+                check_rule = build_check_rule(str(request.url_rule), str(request.rule_version),
+                                              list(request.url_rule.methods & set(METHODS)))
+                check_func = check_param.get_check_rules().get(check_rule)
+                if check_func:
+                    check_func(*args, **kw)
+            except BusinessException as e:
+                return e.package_error()
+            except Exception as e:
+                if flask_env not in ['PROD', 'PROD-LEGACY']:
+                    return BaseError.system_exception()
+                return BaseError.system_exception(msg=e)
+            # 监听抛出的异常
+            try:
+                if request.trace_id is not None and request.full_path is not None:
+                    logger.info('trace_id is:' + request.trace_id + ' request path:' + request.full_path)
 
-            return func(*args, **kw)
-        except BusinessException as e:
-            if e.func is not None:
-                return e.func()
-            elif e.code is not None and e.msg is not None:
-                business_exception_log(e)
-                if e.code == SYSTEM_CODE_404 or e.code == SYSTEM_CODE_503:
-                    return return_data(code=e.code, msg=SYSTEM_ERROR)
-                else:
-                    return return_data(code=e.code, msg=e.msg)
-            else:
-                return request_fail()
-        except Exception:
-            return request_fail()
+                return func(*args, **kw)
+            except BusinessException as e:
+                return e.package_error()
+            except Exception as e:
+                if flask_env not in ['PROD', 'PROD-LEGACY']:
+                    return BaseError.system_exception()
+                return BaseError.system_exception(msg=e)
+
+        return handle_request_data
 
     return decorator
 
@@ -293,25 +290,10 @@ def get_cookie_info():
             aes_crypt_cookie = aes_decrypt(req_cookie)
             req_cookie = json.loads(aes_crypt_cookie)
             return req_cookie
-        except:
+        except Exception:
             return {}
     else:
         return {}
-
-
-def business_exception_log(e):
-    if not is_none(request.trace_id) and not is_none(request.full_path):
-        logger.error('BusinessException, code: %s, msg: %s, url: %s, trace_id: %s request path: %s' % (
-            e.code, e.msg, e.url, request.trace_id, request.full_path))
-    else:
-        logger.error('BusinessException, code: %s, msg: %s, url: %s' % (e.code, e.msg, e.url))
-
-
-def request_fail(func=BaseError.system_exception):
-    if not is_none(request.trace_id):
-        logger.error('request fail trace id is:' + str(request.trace_id))
-    logger.error(traceback.format_exc())
-    return func()
 
 
 # 工厂模式，根据不同的后端项目域名生成不同的项目对象,传入request_api中组成接口
@@ -355,15 +337,15 @@ class Requests_api(object):
 
     # 执行请求后端的函数,post请求
     # headers 请求头，如果有特殊的请求头要求，可以使用||{'Content-Type': 'application/json;charset=utf-8'}
-    def implement_post(self, params=None, headers=None, **kwargs):
+    def implement_post(self, data=None, headers=None, **kwargs):
         url = self.url_add_common_param()
         logger.info(url)
         if "json" in kwargs:
-            resp = requests.post(url, json=kwargs.get('json'), headers=headers, **kwargs)
+            resp = requests.post(url, headers=headers, **kwargs)
         else:
-            params = {'params': json.dumps(params)}
-            resp = requests.post(url, data=params, headers=headers, **kwargs)
-        return self.process_response(resp, params, url)
+            data = {'params': json.dumps(data)}
+            resp = requests.post(url, data=data, headers=headers, **kwargs)
+        return self.process_response(resp, data, url)
 
     # 处理服务返回状态
     @staticmethod
@@ -406,8 +388,64 @@ class Requests_api(object):
     def __str__(self):
         return self.url
 
+
 # 例子
 # SEARCH_API_URL = Service_api("http://search.service.mofanghr.com/", common_params={"callSystemID":str(CALL_SYSTEM_ID)}) # 每个service实例化一个
 # job_search = Requests_api(SEARCH_API_URL,"inner/all/job/search.json") # 每个接口实例化一个
 #
 # result = job_search.implement_get({"userID":"12345"}) # 前端函数中使用
+
+
+# 注册中心
+class EurekaClient(object):
+    def __init__(self):
+        # 注册中心
+        self.ek_cli = None
+
+    # eureka_client.init_discovery_client("http://dev:dev@register.cloud.mofanghr.com/eureka/")
+    def discovery_client(self):
+        self.ek_cli = eureka_client.init_discovery_client(EUREKA_CLIENT_URI)
+
+    # eureka_client.do_service(app_name="python_test", service="/member/getUserInfo.json", method="POST")
+    def do_service(self, app_name="", service="", return_type="json", prefer_ip=False, prefer_https=False,
+                   method="POST", headers=None, data=None, timeout=10,
+                   cafile=None, capath=None, cadefault=False, context=None):
+
+        headers = get_json_header() if headers is None else headers
+        if headers.get("Content-Type").startswith("application/json"):
+            data = bytes(json.dumps(data), encoding='utf8')
+        elif headers.get("Content-Type").startswith("application/x-www-form-urlencoded"):
+            data = bytes(urlencode(data), encoding='utf8')
+
+        # try:
+        resp = self.ek_cli.do_service(app_name, service, return_type, prefer_ip, prefer_https, method, headers,
+                                      data, timeout, cafile, capath, cadefault, context)
+
+        if 'code' not in resp or resp.get('code') != 200:
+            logger.error('api_return_error, result: %s, url: %s, params: %s' % (str(resp), app_name + service, data))
+
+        return resp
+        # except URLError:
+        #     raise BusinessException(func=BaseError.server_api_error)
+
+    def registry_client(self, app_name, port):
+        # eureka_client.init_registry_client(
+        #   "http://dev:dev@register.cloud.mofanghr.com/eureka/",
+        #   "python_test",
+        #   instance_port=3200
+        #   )
+        pass
+
+    def delete_override(self):
+        # eureka_client.delete_status_override(
+        #   "http://dev:dev@register.cloud.mofanghr.com/eureka/",
+        #   "python_test",
+        #   "192.168.127.140:python_test:3200",
+        #   "2020-06-29 18:13:50")
+        pass
+
+
+# 注册中心
+# eureka_client.init_discovery_client(EUREKA_CLIENT_URI)
+# ek_cli = EurekaClient()
+# ek_cli.discovery_client()

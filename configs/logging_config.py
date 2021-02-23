@@ -14,7 +14,7 @@ id_simple_format = '[%(levelname)s][%(asctime)s] %(message)s'
 # 项目名
 project_name = 'docker_web'
 # 日志文件名
-logfile_name = '/data/logs/' + project_name
+logfile_name = '/data/logs/python3/' + project_name
 
 # 日志配置
 LOGGING_DIC = {
@@ -49,8 +49,8 @@ LOGGING_DIC = {
             'class': 'logging.handlers.RotatingFileHandler',  # 保存到文件
             'formatter': 'simple',
             'filename': '%s/access.log' % logfile_name,  # 日志文件路径
-            'maxBytes': 1024 * 1024 * 5,  # 日志大小 5M
-            'backupCount': 5,  # 备份5个日志文件
+            'maxBytes': 1024 * 1024 * 200,  # 日志大小 5M
+            'backupCount': 20,  # 备份5个日志文件
             'encoding': 'utf-8',  # 日志文件的编码，再也不用担心中文log乱码了
         },
         # 打印到importance文件的日志,收集error及以上的日志
@@ -59,9 +59,9 @@ LOGGING_DIC = {
             'class': 'logging.handlers.RotatingFileHandler',  # 保存到文件
             'formatter': 'distinct',
             'filename': '%s/importance.log' % logfile_name,  # 日志文件
-            # 'maxBytes': 1024*1024*5,  # 日志大小 5M
-            'maxBytes': 300,  # 日志大小 300kb
-            'backupCount': 5,  # 备份5个日志文件
+            'maxBytes': 1024*1024*50,  # 日志大小 5M
+            # 'maxBytes': 300,  # 日志大小 300kb
+            'backupCount': 10,  # 备份5个日志文件
             'encoding': 'utf-8',  # 日志文件的编码，再也不用担心中文log乱码了
         },
     },
@@ -132,5 +132,5 @@ class Log(object):
 
 
 Log().isdir_logs()
-mf_logger = Log.make_logger('default')
-mf_logger.info('787878')
+zyz_logger = Log.make_logger('default')
+zyz_logger.info('787878')
